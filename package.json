@@ -4,8 +4,8 @@
   "description": "Wrapper for odbc package with pre-determined setup.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "repository": "github.com/ngrey5/odbc-connection",
-  "homepage": "github.com/ngrey5/odbc-connection",
+  "repository": "github.com/ngrey5/odbc",
+  "homepage": "github.com/ngrey5/odbc",
   "scripts": {
     "start": "npm run compile-ts && node dist/index.js",
     "compile-ts": "npx tsc",
