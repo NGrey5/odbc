@@ -3,12 +3,13 @@
   "version": "1.0.0",
   "description": "Connect to an ODBC datasource using the odbc package",
   "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "repository": "github.com/ngrey5/odbc-connection",
   "homepage": "github.com/ngrey5/odbc-connection",
   "scripts": {
     "start": "npm run compile-ts && node dist/index.js",
     "compile-ts": "npx tsc",
-    "publish-npm": "npx tsc && npm publish --access public",
+    "prepublish": "npm run compile-ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
