@@ -1,0 +1,25 @@
+{
+  "name": "@ngrey5/odbc-connection",
+  "version": "1.0.0",
+  "description": "Connect to an ODBC datasource using the odbc package",
+  "main": "dist/index.js",
+  "repository": "github.com/ngrey5/odbc-connection",
+  "homepage": "github.com/ngrey5/odbc-connection",
+  "scripts": {
+    "start": "npm run compile-ts && node dist/index.js",
+    "compile-ts": "npx tsc",
+    "publish-npm": "npx tsc && npm publish --access public",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "odbc"
+  ],
+  "author": "Nick Grey",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^4.2.4"
+  },
+  "dependencies": {
+    "odbc": "^2.3.6"
+  }
+}
