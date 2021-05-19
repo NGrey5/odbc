@@ -1,24 +1,13 @@
-import { ConnectionStringOptions } from "../types/ConnectionStringOptions.interface";
-import { DSN } from "../types/DSN.type";
+import * as odbc from "odbc";
+import { PoolConfig } from "../types";
+import { exposeODBCConnection } from "./expose/exposeODBCConnection/exposeODBCConnection";
+import { exposeODBCPool } from "./expose/exposeODBCPool/exposeODBCPool";
 
-// Creates a connection string for ODBC with the given options
-export function getConnectionString(
-  odbcConnection: DSN | ConnectionStringOptions
-): string {
-  // If only DSN, return string as DSN
-  if (typeof odbcConnection === "string") {
-    return `DSN=${odbcConnection}`;
-  }
-  // If connection options, then create the string from the options and return
-  const { driver, server, dbName, auth } =
-    odbcConnection as ConnectionStringOptions;
-  const driverString = `Driver={${driver}}`;
-  const serverString = `ServerName=${server}`;
-  const dbNameString = `DBQ=${dbName}`;
-  const authString = `UID=${auth?.user};PWD=${auth?.password}`;
+export * from "./createConnection/createConnection";
 
-  const strings: string[] = [driverString, serverString, dbNameString];
-  if (auth) strings.push(authString);
+export * from "./createConnectionPool/createConnectionPool";
 
-  return strings.join(";");
-}
+export const expose = {
+  odbcConnection: (connectionString: string) => exposeODBCConnection(connectionString),
+  odbcPool: (config: PoolConfig & { connectionString: string }) => exposeODBCPool(config),
+};

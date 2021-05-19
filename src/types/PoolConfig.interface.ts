@@ -1,4 +1,4 @@
-export interface PoolOptions {
+export interface PoolConfig {
   connectionTimeout?: number;
   loginTimeout?: number;
   initialSize?: number;

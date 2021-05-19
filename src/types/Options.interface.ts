@@ -1,4 +1,4 @@
 export interface Options {
-  trimWhiteSpacesFromResult?: boolean;
+  trimEndOfResults?: boolean;
   useCustomInsertParams?: boolean;
 }

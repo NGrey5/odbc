@@ -1,11 +1,10 @@
 import odbc from "odbc";
 import { DEFAULT_OPTIONS } from "../constants";
-import { getConnectionString } from "../functions";
-import { ConnectionStringOptions } from "../types/ConnectionStringOptions.interface";
-import { DSN } from "../types/DSN.type";
+import { createConnectionStringFromConfig } from "../common/createConnectionStringFromConfig";
+import { CreateConnectionConfig } from "../types/ConnectionConfig.interface";
 import { Options } from "../types/Options.interface";
-import { PoolOptions } from "../types/PoolOptions.interface";
-import { ODBCConnection } from "./ODBCConnection";
+import { PoolConfig } from "../types/PoolConfig.interface";
+import { ODBCConnection } from "./ODBCConnection/ODBCConnection";
 
 export class ODBCConnectionPool {
   private pool: odbc.Pool | undefined;
@@ -14,20 +13,20 @@ export class ODBCConnectionPool {
   constructor() {}
 
   public async create(
-    connectionStringOptions: DSN | ConnectionStringOptions,
-    poolOptions?: PoolOptions,
+    connectionConfig: CreateConnectionConfig,
+    poolConfig?: PoolConfig,
     options?: Options
   ): Promise<void> {
-    const connectionString = getConnectionString(connectionStringOptions);
+    const connectionString = createConnectionStringFromConfig(connectionConfig);
 
     this.pool = await odbc.pool({
       connectionString,
-      connectionTimeout: poolOptions?.connectionTimeout,
-      loginTimeout: poolOptions?.loginTimeout,
-      initialSize: poolOptions?.initialSize,
-      incrementSize: poolOptions?.incrementSize,
-      maxSize: poolOptions?.maxSize,
-      shrink: poolOptions?.shrink,
+      connectionTimeout: poolConfig?.connectionTimeout,
+      loginTimeout: poolConfig?.loginTimeout,
+      initialSize: poolConfig?.initialSize,
+      incrementSize: poolConfig?.incrementSize,
+      maxSize: poolConfig?.maxSize,
+      shrink: poolConfig?.shrink,
     });
     this.options = options || this.options;
   }
@@ -38,8 +37,7 @@ export class ODBCConnectionPool {
     const connection = new ODBCConnection();
     const connFromPool = await this.pool.connect();
 
-    if (!connFromPool)
-      throw new Error(`Could not retrieve a connection from the ODBC pool.`);
+    if (!connFromPool) throw new Error(`Could not retrieve a connection from the ODBC pool.`);
 
     connection.useExistingConnection(connFromPool, this.options);
 
