@@ -1,6 +1,6 @@
 {
   "name": "@ngrey5/odbc",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Wrapper for odbc package with pre-determined setup.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
