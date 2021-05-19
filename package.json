@@ -8,6 +8,7 @@
   "homepage": "github.com/ngrey5/odbc",
   "scripts": {
     "start": "npm run compile-ts && node dist/index.js",
+    "precompile-ts": "npx rimraf dist/**/*",
     "compile-ts": "npx tsc",
     "prepublish": "npm run compile-ts",
     "test": "jest --watch"
@@ -20,10 +21,14 @@
   "devDependencies": {
     "@types/jest": "^26.0.23",
     "jest": "^26.6.3",
+    "rimraf": "^3.0.2",
     "ts-jest": "^26.5.6",
     "typescript": "^4.2.4"
   },
   "dependencies": {
     "odbc": "^2.3.6"
-  }
+  },
+  "files": [
+    "dist/"
+  ]
 }

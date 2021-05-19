@@ -1,10 +1,10 @@
 import odbc from "odbc";
-import { DEFAULT_OPTIONS } from "../constants";
-import { createConnectionStringFromConfig } from "../common/createConnectionStringFromConfig";
-import { CreateConnectionConfig } from "../types/ConnectionConfig.interface";
-import { Options } from "../types/Options.interface";
-import { PoolConfig } from "../types/PoolConfig.interface";
-import { ODBCConnection } from "./ODBCConnection/ODBCConnection";
+import { DEFAULT_OPTIONS } from "../../constants";
+import { createConnectionStringFromConfig } from "../../common/createConnectionStringFromConfig";
+import { CreateConnectionConfig } from "../../types/ConnectionConfig.interface";
+import { Options } from "../../types/Options.interface";
+import { PoolConfig } from "../../types/PoolConfig.interface";
+import { ODBCConnection } from "../ODBCConnection/ODBCConnection";
 
 export class ODBCConnectionPool {
   private pool: odbc.Pool | undefined;

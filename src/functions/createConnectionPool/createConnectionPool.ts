@@ -1,4 +1,4 @@
-import { ODBCConnectionPool } from "../../classes/ODBCConnectionPool";
+import { ODBCConnectionPool } from "../../classes/ODBCConnectionPool/ODBCConnectionPool";
 import { CreateConnectionConfig, Options, PoolConfig } from "../../types";
 
 export async function createConnectionPool(
