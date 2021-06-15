@@ -21,7 +21,7 @@ After insuring that all requirements are installed you may install by using the 
 ### npm
 
 ```bash
-npm install @ngrey/odbc
+npm install @ngrey5/odbc
 ```
 
 ## quick example
