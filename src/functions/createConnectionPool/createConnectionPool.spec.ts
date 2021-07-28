@@ -1,6 +1,6 @@
 import { createConnectionPool } from "..";
 import { TESTING_DSN } from "../../../private/constants";
-import { ODBCConnectionPool } from "../../classes/ODBCConnectionPool";
+import { ODBCConnectionPool } from "../../classes/ODBCConnectionPool/ODBCConnectionPool";
 
 describe("createConnectionPool", () => {
   it("should create a connection pool", async () => {

@@ -1,6 +1,6 @@
 import { TESTING_DSN } from "../../../private/constants";
 import { ODBCConnection } from "../ODBCConnection/ODBCConnection";
-import { ODBCConnectionPool } from "../ODBCConnectionPool";
+import { ODBCConnectionPool } from "../ODBCConnectionPool/ODBCConnectionPool";
 
 describe("ODBCConnectionPool", () => {
   let testPool: ODBCConnectionPool;

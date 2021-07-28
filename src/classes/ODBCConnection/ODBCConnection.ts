@@ -5,6 +5,7 @@ import { CreateConnectionConfig } from "../../types/ConnectionConfig.interface";
 import { Options } from "../../types/Options.interface";
 import { customInsertParams } from "../../common/customInsertParams";
 import { trimEndOfResults } from "../../common/trimEndOfResults";
+import { QueryParameter } from "../../types";
 
 export class ODBCConnection {
   private connection: odbc.Connection | undefined;
@@ -19,7 +20,10 @@ export class ODBCConnection {
     this.setOptions(options);
   }
 
-  public async connect(config: CreateConnectionConfig, options?: Options): Promise<void> {
+  public async connect(
+    config: CreateConnectionConfig,
+    options?: Options
+  ): Promise<void> {
     // If trying to connect on this connection and already connected
     // then close the current connection
     if (this.connection !== undefined) this.close();
@@ -31,16 +35,25 @@ export class ODBCConnection {
 
   // Query
 
-  public async query<T = any>(sql: string, parameters?: any[]): Promise<T[]> {
+  public async query<T = any>(
+    sql: string,
+    parameters?: QueryParameter[]
+  ): Promise<T[]> {
     return this.queryMany<T>(sql, parameters);
   }
 
-  public async queryOne<T = any>(sql: string, parameters?: any[]): Promise<T> {
+  public async queryOne<T = any>(
+    sql: string,
+    parameters?: QueryParameter[]
+  ): Promise<T> {
     const result: T[] = await this.executeQuery(sql, parameters);
     return result[0];
   }
 
-  public async queryMany<T = any>(sql: string, parameters?: any[]): Promise<T[]> {
+  public async queryMany<T = any>(
+    sql: string,
+    parameters?: QueryParameter[]
+  ): Promise<T[]> {
     const result: T[] = await this.executeQuery(sql, parameters);
     return result;
   }
@@ -54,7 +67,9 @@ export class ODBCConnection {
 
   public async beginTransaction(): Promise<void> {
     if (!this.connection)
-      throw new Error(`Could not begin the transaction. There was no active ODBC connection found.`);
+      throw new Error(
+        `Could not begin the transaction. There was no active ODBC connection found.`
+      );
     await this.connection.beginTransaction();
   }
 
@@ -68,8 +83,12 @@ export class ODBCConnection {
 
   // Private Methods
 
-  private async executeQuery(sql: string, parameters?: any[]): Promise<any> {
-    if (!this.connection) throw new Error(`There was no active ODBC connection found.`);
+  private async executeQuery(
+    sql: string,
+    parameters?: QueryParameter[]
+  ): Promise<any> {
+    if (!this.connection)
+      throw new Error(`There was no active ODBC connection found.`);
     let query: string = sql;
     try {
       let result: odbc.Result<any>; // Init the result
@@ -80,7 +99,7 @@ export class ODBCConnection {
       }
       // If using normal insert param function, then get the result
       else {
-        result = await this.connection.query(query, parameters);
+        result = await this.connection.query(query, parameters as any[]);
       }
 
       let transformedResult: any = result; // Init the transformed result
@@ -91,8 +110,13 @@ export class ODBCConnection {
       return transformedResult;
     } catch (error) {
       const message = error.message;
-      const odbcErrors = error.odbcErrors.map((odbcError: any, i: number) => `${i + 1}: ${odbcError.message}`);
-      console.log("\x1b[31m%s\x1b[0m", "There were errors executing the odbc sql query. Refer to the details below:\n");
+      const odbcErrors = error.odbcErrors.map(
+        (odbcError: any, i: number) => `${i + 1}: ${odbcError.message}`
+      );
+      console.log(
+        "\x1b[31m%s\x1b[0m",
+        "There were errors executing the odbc sql query. Refer to the details below:\n"
+      );
       console.log("\x1b[31m%s\x1b[0m", "Message:");
       console.log(message);
       console.log("\x1b[31m%s\x1b[0m", "ODBC Errors:");
@@ -104,7 +128,9 @@ export class ODBCConnection {
       console.log("\x1b[31m%s\x1b[0m", "Query:");
       console.log(query + "\n");
 
-      throw new Error(error.odbcErrors[0].message || "There was an error executing the query.");
+      throw new Error(
+        error.odbcErrors[0].message || "There was an error executing the query."
+      );
     }
   }
 
