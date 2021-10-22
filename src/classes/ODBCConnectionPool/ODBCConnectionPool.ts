@@ -5,6 +5,8 @@ import { CreateConnectionConfig } from "../../types/ConnectionConfig.interface";
 import { Options } from "../../types/Options.interface";
 import { PoolConfig } from "../../types/PoolConfig.interface";
 import { ODBCConnection } from "../ODBCConnection/ODBCConnection";
+// Error Handling
+import { throwODBCError } from "../../common/throwODBCError";
 
 export class ODBCConnectionPool {
   private pool: odbc.Pool | undefined;
@@ -18,16 +20,19 @@ export class ODBCConnectionPool {
     options?: Options
   ): Promise<void> {
     const connectionString = createConnectionStringFromConfig(connectionConfig);
-
-    this.pool = await odbc.pool({
-      connectionString,
-      connectionTimeout: poolConfig?.connectionTimeout,
-      loginTimeout: poolConfig?.loginTimeout,
-      initialSize: poolConfig?.initialSize,
-      incrementSize: poolConfig?.incrementSize,
-      maxSize: poolConfig?.maxSize,
-      shrink: poolConfig?.shrink,
-    });
+    try {
+      this.pool = await odbc.pool({
+        connectionString,
+        connectionTimeout: poolConfig?.connectionTimeout,
+        loginTimeout: poolConfig?.loginTimeout,
+        initialSize: poolConfig?.initialSize,
+        incrementSize: poolConfig?.incrementSize,
+        maxSize: poolConfig?.maxSize,
+        shrink: poolConfig?.shrink,
+      });
+    } catch (error: any) {
+      throwODBCError(error);
+    }
     this.options = options || this.options;
   }
 
@@ -37,7 +42,8 @@ export class ODBCConnectionPool {
     const connection = new ODBCConnection();
     const connFromPool = await this.pool.connect();
 
-    if (!connFromPool) throw new Error(`Could not retrieve a connection from the ODBC pool.`);
+    if (!connFromPool)
+      throw new Error(`Could not retrieve a connection from the ODBC pool.`);
 
     connection.useExistingConnection(connFromPool, this.options);
 

@@ -6,6 +6,8 @@ import { Options } from "../../types/Options.interface";
 import { customInsertParams } from "../../common/customInsertParams";
 import { trimEndOfResults } from "../../common/trimEndOfResults";
 import { QueryParameter } from "../../types";
+// Error Handling
+import { throwODBCError } from "../../common/throwODBCError";
 
 export class ODBCConnection {
   private connection: odbc.Connection | undefined;
@@ -29,7 +31,11 @@ export class ODBCConnection {
     if (this.connection !== undefined) this.close();
     // Create the new connection and assign it to this.connection
     const connectionString = createConnectionStringFromConfig(config);
-    this.connection = await odbc.connect(connectionString);
+    try {
+      this.connection = await odbc.connect(connectionString);
+    } catch (error: any) {
+      throwODBCError(error);
+    }
     this.setOptions(options);
   }
 
@@ -108,7 +114,7 @@ export class ODBCConnection {
         transformedResult = trimEndOfResults(transformedResult);
       }
       return transformedResult;
-    } catch (error) {
+    } catch (error: any) {
       const message = error.message;
       const odbcErrors = error.odbcErrors.map(
         (odbcError: any, i: number) => `${i + 1}: ${odbcError.message}`
