@@ -11,6 +11,7 @@
     "precompile-ts": "npx rimraf dist/**/*",
     "compile-ts": "npx tsc",
     "prepublish": "npm run compile-ts",
+    "publish": "npm publish --access public",
     "test": "jest --watch"
   },
   "keywords": [
