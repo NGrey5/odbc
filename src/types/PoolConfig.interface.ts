@@ -4,5 +4,5 @@ export interface PoolConfig {
   initialSize?: number;
   incrementSize?: number;
   maxSize?: number;
-  shrink?: number;
+  shrink?: boolean;
 }

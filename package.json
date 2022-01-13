@@ -1,6 +1,6 @@
 {
   "name": "@ngrey5/odbc",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "description": "Wrapper for odbc package with pre-determined setup.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -10,8 +10,8 @@
     "start": "npm run compile-ts && node dist/index.js",
     "precompile-ts": "npx rimraf dist/**/*",
     "compile-ts": "npx tsc",
-    "prepublish": "npm run compile-ts",
-    "publish": "npm publish --access public",
+    "prepublish-npm": "npm run compile-ts",
+    "publish-npm": "npm publish --access public",
     "test": "jest --watch"
   },
   "keywords": [
@@ -27,7 +27,7 @@
     "typescript": "^4.2.4"
   },
   "dependencies": {
-    "odbc": "^2.3.6"
+    "odbc": "^2.4.1"
   },
   "files": [
     "dist/"
