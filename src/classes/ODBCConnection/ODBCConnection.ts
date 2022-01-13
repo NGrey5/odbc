@@ -13,6 +13,8 @@ export class ODBCConnection {
   private connection: odbc.Connection | undefined;
   private options: Options = DEFAULT_OPTIONS;
 
+  private isTransaction: boolean = false;
+
   constructor() {}
 
   // Connection
@@ -32,7 +34,7 @@ export class ODBCConnection {
     // Create the new connection and assign it to this.connection
     const connectionString = createConnectionStringFromConfig(config);
     try {
-      this.connection = await odbc.connect(connectionString);
+      this.connection = await odbc.connect({ connectionString });
     } catch (error: any) {
       throwODBCError(error);
     }
@@ -41,6 +43,12 @@ export class ODBCConnection {
 
   // Query
 
+  /**
+   * Returns the results of the query in an array. This calls queryMany internally.
+   * @param sql (string) - the sql statement to execute
+   * @param parameters (array) - the parameters to inject into the sql statement at '?'
+   * @returns the result of the query
+   */
   public async query<T = any>(
     sql: string,
     parameters?: QueryParameter[]
@@ -48,6 +56,12 @@ export class ODBCConnection {
     return this.queryMany<T>(sql, parameters);
   }
 
+  /**
+   * Returns the results of the query as an object or null if no result.
+   * @param sql (string) - the sql statement to execute
+   * @param parameters (array) - the parameters to inject into the sql statement at '?'
+   * @returns the result of the query
+   */
   public async queryOne<T = any>(
     sql: string,
     parameters?: QueryParameter[]
@@ -56,6 +70,12 @@ export class ODBCConnection {
     return result[0];
   }
 
+  /**
+   * Returns the results of the query in an array.
+   * @param sql (string) - the sql statement to execute
+   * @param parameters (array) - the parameters to inject into the sql statement at '?'
+   * @returns the result of the query
+   */
   public async queryMany<T = any>(
     sql: string,
     parameters?: QueryParameter[]
@@ -64,26 +84,77 @@ export class ODBCConnection {
     return result;
   }
 
+  /**
+   * Closes the current ODBC connection. If a transaction is in progress, it will automatically rollback all changes
+   */
   public async close(): Promise<void> {
     await this.connection?.close();
     this.connection === undefined;
   }
 
+  /**
+   * Sets the isolation level for the connection and applies to each transaction within the connection
+   * @param isolationLevel SQL_TXN_ISOLATION option (number)
+   */
+  public async setIsolationLevel(isolationLevel: number): Promise<void> {
+    if (!this.connection)
+      throw new Error(
+        `Could not set the isolation level. There was no active ODBC connection found.`
+      );
+
+    try {
+      await this.connection.setIsolationLevel(isolationLevel);
+    } catch (error) {
+      throwODBCError(error);
+    }
+  }
+
   // Transaction
 
-  public async beginTransaction(): Promise<void> {
+  /**
+   * Begins a transaction within the ODBC connection. ODBC by default runs all queries inside a transaction.
+   * The only difference is that beginTransaction will set AUTO_COMMIT to off, preventing each query from being automatically commited.
+   * The queries provided to the transaction will only be commited explicity by using commit or rollback to end the transaction.
+   * @param isolationLevel SQL_TXN_ISOLATION option (optional number)
+   */
+  public async beginTransaction(isolationLevel?: number): Promise<void> {
     if (!this.connection)
       throw new Error(
         `Could not begin the transaction. There was no active ODBC connection found.`
       );
+
+    // If an isolation level for the specific transaction has been specified, then set it
+    if (isolationLevel) this.setIsolationLevel(isolationLevel);
+
     await this.connection.beginTransaction();
+    this.isTransaction = true;
   }
 
+  /**
+   * Commits all queries to the database made within the current transaction
+   */
   public async commit(): Promise<void> {
+    if (!this.isTransaction) {
+      throwODBCError(
+        new Error(
+          "Could not commit because the ODBC connection is not set as a transaction."
+        )
+      );
+    }
     await this.connection?.commit();
   }
 
+  /**
+   * Rolls back all changes made within the current transaction
+   */
   public async rollback(): Promise<void> {
+    if (!this.isTransaction) {
+      throwODBCError(
+        new Error(
+          "Could not rollback because the ODBC connection is not set as a transaction."
+        )
+      );
+    }
     await this.connection?.rollback();
   }
 

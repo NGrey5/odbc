@@ -1,9 +1,12 @@
-import { TESTING_DBNAME, TESTING_DRIVER, TESTING_DSN, TESTING_SERVER } from "../../../private/constants";
+import {
+  TESTING_DBNAME,
+  TESTING_DRIVER,
+  TESTING_DSN,
+  TESTING_SERVER,
+} from "../../../private/constants";
 import { ODBCConnection } from "./ODBCConnection";
-import * as odbc from "odbc";
 import { expose } from "../../functions";
 import { DEFAULT_OPTIONS } from "../../constants";
-import * as common from "../../common";
 
 describe("ODBCConnection", () => {
   let testConn: ODBCConnection;
@@ -33,7 +36,11 @@ describe("ODBCConnection", () => {
       throw new Error(error);
     }
     try {
-      await conn.connect({ driver: TESTING_DRIVER, server: TESTING_SERVER, database: TESTING_DBNAME });
+      await conn.connect({
+        driver: TESTING_DRIVER,
+        server: TESTING_SERVER,
+        database: TESTING_DBNAME,
+      });
     } catch (error) {
       throw new Error(error);
     }
@@ -82,7 +89,10 @@ describe("ODBCConnection", () => {
     const conn = new ODBCConnection();
     const spy = spyOn<any>(conn, "setOptions").and.callThrough();
 
-    await conn.connect({ DSN: TESTING_DSN }, { trimEndOfResults: false, useCustomInsertParams: false });
+    await conn.connect(
+      { DSN: TESTING_DSN },
+      { trimEndOfResults: false, useCustomInsertParams: false }
+    );
 
     expect(spy).toHaveBeenCalledTimes(1);
     expect(conn["options"]).toEqual({
@@ -102,21 +112,27 @@ describe("ODBCConnection", () => {
   });
 
   it("should query and return all values using query", async () => {
-    const spy = spyOn(testConn, "queryMany").and.returnValue(Promise.resolve([]));
+    const spy = spyOn(testConn, "queryMany").and.returnValue(
+      Promise.resolve([])
+    );
     const result = await testConn.query("test", [1]);
     expect(result).toEqual([]);
     expect(spy).toHaveBeenCalledWith("test", [1]);
   });
 
   it("should query and return one value using queryOne", async () => {
-    const spy = spyOn<any>(testConn, "executeQuery").and.returnValue(Promise.resolve([{ test: 1 }, { test: 2 }]));
+    const spy = spyOn<any>(testConn, "executeQuery").and.returnValue(
+      Promise.resolve([{ test: 1 }, { test: 2 }])
+    );
     const result = await testConn.queryOne("test", [1]);
     expect(result).toEqual({ test: 1 });
     expect(spy).toHaveBeenCalledWith("test", [1]);
   });
 
   it("should query and return all values using queryMany", async () => {
-    const spy = spyOn<any>(testConn, "executeQuery").and.returnValue(Promise.resolve([{ test: 1 }, { test: 2 }]));
+    const spy = spyOn<any>(testConn, "executeQuery").and.returnValue(
+      Promise.resolve([{ test: 1 }, { test: 2 }])
+    );
     const result = await testConn.queryMany("test", [1]);
     expect(result).toEqual([{ test: 1 }, { test: 2 }]);
     expect(spy).toHaveBeenCalledWith("test", [1]);
@@ -132,20 +148,40 @@ describe("ODBCConnection", () => {
   it("should commit a transaction", async () => {
     const raw = testConn["connection"];
     const spy = spyOn<any>(raw, "commit");
+    await testConn.beginTransaction();
     await testConn.commit();
     expect(spy).toHaveBeenCalledTimes(1);
+  });
+
+  it("should throw an error when trying to commit when not a transaction", async () => {
+    try {
+      await testConn.commit();
+    } catch (error) {
+      expect(error).toBeTruthy();
+    }
   });
 
   it("should rollback a transaction", async () => {
     const raw = testConn["connection"];
     const spy = spyOn<any>(raw, "rollback");
+    await testConn.beginTransaction();
     await testConn.rollback();
     expect(spy).toHaveBeenCalledTimes(1);
   });
 
+  it("should throw an error when trying to rollback when not a transaction", async () => {
+    try {
+      await testConn.rollback();
+    } catch (error) {
+      expect(error).toBeTruthy();
+    }
+  });
+
   it("should execute a normal query", async () => {
     const raw = testConn["connection"];
-    const rawConnSpy = spyOn<any>(raw, "query").and.returnValue(Promise.resolve([{ test: "5   " }]));
+    const rawConnSpy = spyOn<any>(raw, "query").and.returnValue(
+      Promise.resolve([{ test: "5   " }])
+    );
 
     const query = `SELECT * FROM TEST WHERE "test" = 'test'`;
     const result = await testConn["executeQuery"](query);
@@ -155,12 +191,16 @@ describe("ODBCConnection", () => {
 
   it("should execute a normal query with params", async () => {
     const raw = testConn["connection"];
-    const rawConnSpy = spyOn<any>(raw, "query").and.returnValue(Promise.resolve([{ test: "5   " }]));
+    const rawConnSpy = spyOn<any>(raw, "query").and.returnValue(
+      Promise.resolve([{ test: "5   " }])
+    );
 
     const query = `SELECT * FROM TEST WHERE "test" = ? AND "test2" = ?`;
     const result = await testConn["executeQuery"](query, [1, "val"]);
     expect(result).toEqual([{ test: "5" }]);
-    expect(rawConnSpy).toHaveBeenCalledWith(`SELECT * FROM TEST WHERE "test" = 1 AND "test2" = 'val'`);
+    expect(rawConnSpy).toHaveBeenCalledWith(
+      `SELECT * FROM TEST WHERE "test" = 1 AND "test2" = 'val'`
+    );
   });
 
   it("should execute a query and not trim", async () => {
@@ -168,7 +208,9 @@ describe("ODBCConnection", () => {
     await conn.connect({ DSN: TESTING_DSN }, { trimEndOfResults: false });
 
     const raw = conn["connection"];
-    const rawConnSpy = spyOn<any>(raw, "query").and.returnValue(Promise.resolve([{ test: "5   " }]));
+    const rawConnSpy = spyOn<any>(raw, "query").and.returnValue(
+      Promise.resolve([{ test: "5   " }])
+    );
 
     const query = `SELECT * FROM TEST WHERE "test" = 'test'`;
     const result = await conn["executeQuery"](query);
@@ -182,7 +224,9 @@ describe("ODBCConnection", () => {
     await conn.connect({ DSN: TESTING_DSN }, { useCustomInsertParams: false });
 
     const raw = conn["connection"];
-    const rawConnSpy = spyOn<any>(raw, "query").and.returnValue(Promise.resolve([{ test: "5" }]));
+    const rawConnSpy = spyOn<any>(raw, "query").and.returnValue(
+      Promise.resolve([{ test: "5" }])
+    );
 
     const query = `SELECT * FROM TEST WHERE "test" = ?`;
     const result = await conn["executeQuery"](query, ["val"]);

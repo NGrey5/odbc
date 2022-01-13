@@ -1,3 +1,4 @@
+import * as odbc from "odbc";
 import { Options, DatabaseType } from "./types";
 
 export const DEFAULT_OPTIONS: Options = {
@@ -13,7 +14,10 @@ type DatabaseConnectionStringKeys = {
   password_key: string;
 };
 
-export const DATABASE_CONNECTION_STRING_KEYS: Record<DatabaseType, DatabaseConnectionStringKeys> = {
+export const DATABASE_CONNECTION_STRING_KEYS: Record<
+  DatabaseType,
+  DatabaseConnectionStringKeys
+> = {
   actianzen: {
     driver_key: "Driver",
     server_key: "ServerName",
@@ -42,4 +46,11 @@ export const DATABASE_CONNECTION_STRING_KEYS: Record<DatabaseType, DatabaseConne
     user_key: "UID",
     password_key: "PWD",
   },
+};
+
+export const ISOLATION_LEVEL = {
+  READ_UNCOMMITTED: (odbc as any).SQL_TXN_READ_UNCOMMITTED as number,
+  READ_COMMITTED: (odbc as any).SQL_TXN_READ_COMMITTED as number,
+  REPEATABLE_READ: (odbc as any).SQL_TXN_REPEATABLE_READ as number,
+  SERIALIZABLE: (odbc as any).SQL_TXN_SERIALIZABLE as number,
 };
