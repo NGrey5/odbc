@@ -1,13 +1,14 @@
 import odbc from "odbc";
-import { DEFAULT_OPTIONS } from "../../constants";
 import { createConnectionStringFromConfig } from "../../common/createConnectionStringFromConfig";
+import { customInsertParams } from "../../common/customInsertParams";
+// Error Handling
+import { transformODBCError } from "../../common/throwODBCError";
+import { trimEndOfResults } from "../../common/trimEndOfResults";
+import { DEFAULT_OPTIONS } from "../../constants";
+import { QueryParameter } from "../../types";
 import { CreateConnectionConfig } from "../../types/ConnectionConfig.interface";
 import { Options } from "../../types/Options.interface";
-import { customInsertParams } from "../../common/customInsertParams";
-import { trimEndOfResults } from "../../common/trimEndOfResults";
-import { QueryParameter } from "../../types";
-// Error Handling
-import { throwODBCError } from "../../common/throwODBCError";
+import { ODBCErrorResult } from "../ODBCErrorResult/ODBCErrorResult";
 
 export class ODBCConnection {
   private connection: odbc.Connection | undefined;
@@ -36,7 +37,7 @@ export class ODBCConnection {
     try {
       this.connection = await odbc.connect({ connectionString });
     } catch (error: any) {
-      throwODBCError(error);
+      throw transformODBCError(error);
     }
     this.setOptions(options);
   }
@@ -88,8 +89,12 @@ export class ODBCConnection {
    * Closes the current ODBC connection. If a transaction is in progress, it will automatically rollback all changes
    */
   public async close(): Promise<void> {
-    await this.connection?.close();
-    this.connection === undefined;
+    try {
+      await this.connection?.close();
+      this.connection === undefined;
+    } catch (error) {
+      throw transformODBCError(error);
+    }
   }
 
   /**
@@ -98,14 +103,14 @@ export class ODBCConnection {
    */
   public async setIsolationLevel(isolationLevel: number): Promise<void> {
     if (!this.connection)
-      throw new Error(
-        `Could not set the isolation level. There was no active ODBC connection found.`
+      throw new ODBCErrorResult(
+        "Could not set the isolation level. There was no active ODBC connection found."
       );
 
     try {
       await this.connection.setIsolationLevel(isolationLevel);
     } catch (error) {
-      throwODBCError(error);
+      throw transformODBCError(error);
     }
   }
 
@@ -119,15 +124,19 @@ export class ODBCConnection {
    */
   public async beginTransaction(isolationLevel?: number): Promise<void> {
     if (!this.connection)
-      throw new Error(
-        `Could not begin the transaction. There was no active ODBC connection found.`
+      throw new ODBCErrorResult(
+        `Could not being the transaction. There was no active odbc connection found.`
       );
 
     // If an isolation level for the specific transaction has been specified, then set it
     if (isolationLevel) this.setIsolationLevel(isolationLevel);
 
-    await this.connection.beginTransaction();
-    this.isTransaction = true;
+    try {
+      await this.connection.beginTransaction();
+      this.isTransaction = true;
+    } catch (error) {
+      throw transformODBCError(error);
+    }
   }
 
   /**
@@ -135,13 +144,13 @@ export class ODBCConnection {
    */
   public async commit(): Promise<void> {
     if (!this.isTransaction) {
-      throwODBCError(
-        new Error(
-          "Could not commit because the ODBC connection is not set as a transaction."
-        )
+      throw new ODBCErrorResult(
+        "Could not commit because the ODBC connection is not a transaction."
       );
     }
-    await this.connection?.commit();
+    try {
+      await this.connection?.commit();
+    } catch (error) {}
   }
 
   /**
@@ -149,13 +158,15 @@ export class ODBCConnection {
    */
   public async rollback(): Promise<void> {
     if (!this.isTransaction) {
-      throwODBCError(
-        new Error(
-          "Could not rollback because the ODBC connection is not set as a transaction."
-        )
+      throw new ODBCErrorResult(
+        "Could not rollback because the odbc connection is not a transaction"
       );
     }
-    await this.connection?.rollback();
+    try {
+      await this.connection?.rollback();
+    } catch (error) {
+      throw transformODBCError(error);
+    }
   }
 
   // Private Methods
@@ -185,29 +196,17 @@ export class ODBCConnection {
         transformedResult = trimEndOfResults(transformedResult);
       }
       return transformedResult;
-    } catch (error: any) {
-      const message = error.message;
-      const odbcErrors = error.odbcErrors.map(
-        (odbcError: any, i: number) => `${i + 1}: ${odbcError.message}`
-      );
-      console.log(
-        "\x1b[31m%s\x1b[0m",
-        "There were errors executing the odbc sql query. Refer to the details below:\n"
-      );
-      console.log("\x1b[31m%s\x1b[0m", "Message:");
-      console.log(message);
-      console.log("\x1b[31m%s\x1b[0m", "ODBC Errors:");
-      console.log(odbcErrors.join("\n"));
-      console.log("\x1b[31m%s\x1b[0m", "SQL:");
-      console.log(sql);
-      console.log("\x1b[31m%s\x1b[0m", "Parameters:");
-      console.log(parameters || []);
-      console.log("\x1b[31m%s\x1b[0m", "Query:");
-      console.log(query + "\n");
+    } catch (caughtError: any) {
+      let message: string =
+        caughtError.message ||
+        "There was an error executing the query on the odbc connection.";
 
-      throw new Error(
-        error.odbcErrors[0].message || "There was an error executing the query."
-      );
+      const errorQuery = {
+        raw: sql,
+        parameters: parameters || [],
+        formatted: query,
+      };
+      throw transformODBCError(caughtError, errorQuery, message);
     }
   }
 
