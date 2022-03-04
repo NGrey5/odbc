@@ -4,9 +4,9 @@ import {
   TESTING_DSN,
   TESTING_SERVER,
 } from "../../../private/constants";
-import { ODBCConnection } from "./ODBCConnection";
-import { expose } from "../../functions";
 import { DEFAULT_OPTIONS } from "../../constants";
+import { expose } from "../../functions";
+import { ODBCConnection } from "./ODBCConnection";
 
 describe("ODBCConnection", () => {
   let testConn: ODBCConnection;
@@ -53,19 +53,19 @@ describe("ODBCConnection", () => {
     try {
       await conn.connect({ DSN: "INVALID" });
     } catch (error) {
-      expect(error).toBeTruthy();
+      expect(error.errors).toBeTruthy();
     }
     try {
       await conn.connect({
         connectionString: ``,
       });
     } catch (error) {
-      expect(error).toBeTruthy();
+      expect(error.errors).toBeTruthy();
     }
     try {
       await conn.connect({ driver: "", server: "", database: "" });
     } catch (error) {
-      expect(error).toBeTruthy();
+      expect(error.errors).toBeTruthy();
     }
     conn.close();
   });
@@ -157,7 +157,7 @@ describe("ODBCConnection", () => {
     try {
       await testConn.commit();
     } catch (error) {
-      expect(error).toBeTruthy();
+      expect(error.errors).toBeTruthy();
     }
   });
 
@@ -173,7 +173,7 @@ describe("ODBCConnection", () => {
     try {
       await testConn.rollback();
     } catch (error) {
-      expect(error).toBeTruthy();
+      expect(error.errors).toBeTruthy();
     }
   });
 

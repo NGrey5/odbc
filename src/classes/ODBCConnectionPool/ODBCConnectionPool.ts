@@ -1,12 +1,13 @@
 import odbc from "odbc";
-import { DEFAULT_OPTIONS } from "../../constants";
 import { createConnectionStringFromConfig } from "../../common/createConnectionStringFromConfig";
+// Error Handling
+import { transformODBCError } from "../../common/throwODBCError";
+import { DEFAULT_OPTIONS } from "../../constants";
 import { CreateConnectionConfig } from "../../types/ConnectionConfig.interface";
 import { Options } from "../../types/Options.interface";
 import { PoolConfig } from "../../types/PoolConfig.interface";
 import { ODBCConnection } from "../ODBCConnection/ODBCConnection";
-// Error Handling
-import { throwODBCError } from "../../common/throwODBCError";
+import { ODBCErrorResult } from "../ODBCErrorResult/ODBCErrorResult";
 
 export class ODBCConnectionPool {
   private pool: odbc.Pool | undefined;
@@ -31,7 +32,7 @@ export class ODBCConnectionPool {
         shrink: poolConfig?.shrink,
       });
     } catch (error: any) {
-      throwODBCError(error);
+      throw transformODBCError(error);
     }
     this.options = options || this.options;
   }
@@ -40,10 +41,18 @@ export class ODBCConnectionPool {
     if (!this.pool) throw new Error(`No active ODBC connection pool exists.`);
 
     const connection = new ODBCConnection();
-    const connFromPool = await this.pool.connect();
+
+    let connFromPool: odbc.Connection;
+    try {
+      connFromPool = await this.pool.connect();
+    } catch (error) {
+      throw transformODBCError(error);
+    }
 
     if (!connFromPool)
-      throw new Error(`Could not retrieve a connection from the ODBC pool.`);
+      throw new ODBCErrorResult(
+        "Could not retrieve a connection from the odbc pool."
+      );
 
     connection.useExistingConnection(connFromPool, this.options);
 
@@ -51,6 +60,10 @@ export class ODBCConnectionPool {
   }
 
   public async close(): Promise<void> {
-    await this.pool?.close();
+    try {
+      await this.pool?.close();
+    } catch (error) {
+      throw transformODBCError(error);
+    }
   }
 }
