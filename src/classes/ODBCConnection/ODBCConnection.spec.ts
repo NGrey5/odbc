@@ -6,6 +6,7 @@ import {
 } from "../../../private/constants";
 import { DEFAULT_OPTIONS } from "../../constants";
 import { expose } from "../../functions";
+import { ODBCResult } from "../../types";
 import { ODBCConnection } from "./ODBCConnection";
 
 describe("ODBCConnection", () => {
@@ -121,8 +122,9 @@ describe("ODBCConnection", () => {
   });
 
   it("should query and return one value using queryOne", async () => {
+    const mock = { result: [{ test: 1 }, { test: 2 }] };
     const spy = spyOn<any>(testConn, "executeQuery").and.returnValue(
-      Promise.resolve([{ test: 1 }, { test: 2 }])
+      Promise.resolve(mock)
     );
     const result = await testConn.queryOne("test", [1]);
     expect(result).toEqual({ test: 1 });
@@ -130,11 +132,40 @@ describe("ODBCConnection", () => {
   });
 
   it("should query and return all values using queryMany", async () => {
+    const mock = { result: [{ test: 1 }, { test: 2 }] };
     const spy = spyOn<any>(testConn, "executeQuery").and.returnValue(
-      Promise.resolve([{ test: 1 }, { test: 2 }])
+      Promise.resolve(mock)
     );
     const result = await testConn.queryMany("test", [1]);
-    expect(result).toEqual([{ test: 1 }, { test: 2 }]);
+    expect(result).toEqual(mock.result);
+    expect(spy).toHaveBeenCalledWith("test", [1]);
+  });
+
+  it("should return an odbc result from execute", async () => {
+    const mock: ODBCResult<any> = {
+      result: [{ test: 1 }],
+      columns: [
+        {
+          name: "test",
+          dataType: 1,
+          columnSize: 1,
+          decimalDigits: 1,
+          nullable: false,
+        },
+      ],
+      count: 1,
+      parameters: [],
+      return: undefined,
+      statement: "MY STATEMENT",
+    };
+    const spy = spyOn<any>(testConn, "executeQuery").and.returnValue(
+      Promise.resolve(mock)
+    );
+    const result = await testConn.execute("test", [1]);
+    expect(result.result).toEqual([{ test: 1 }]);
+    expect(result.count).toEqual(1);
+    expect(result.parameters).toEqual([]);
+    expect(result.statement).toEqual("MY STATEMENT");
     expect(spy).toHaveBeenCalledWith("test", [1]);
   });
 
@@ -185,7 +216,7 @@ describe("ODBCConnection", () => {
 
     const query = `SELECT * FROM TEST WHERE "test" = 'test'`;
     const result = await testConn["executeQuery"](query);
-    expect(result).toEqual([{ test: "5" }]);
+    expect(result.result).toEqual([{ test: "5" }]);
     expect(rawConnSpy).toHaveBeenCalledWith(query);
   });
 
@@ -197,7 +228,7 @@ describe("ODBCConnection", () => {
 
     const query = `SELECT * FROM TEST WHERE "test" = ? AND "test2" = ?`;
     const result = await testConn["executeQuery"](query, [1, "val"]);
-    expect(result).toEqual([{ test: "5" }]);
+    expect(result.result).toEqual([{ test: "5" }]);
     expect(rawConnSpy).toHaveBeenCalledWith(
       `SELECT * FROM TEST WHERE "test" = 1 AND "test2" = 'val'`
     );
@@ -215,7 +246,7 @@ describe("ODBCConnection", () => {
     const query = `SELECT * FROM TEST WHERE "test" = 'test'`;
     const result = await conn["executeQuery"](query);
     expect(rawConnSpy).toHaveBeenCalledWith(query);
-    expect(result).toEqual([{ test: "5   " }]);
+    expect(result.result).toEqual([{ test: "5   " }]);
     conn.close();
   });
 
@@ -230,7 +261,7 @@ describe("ODBCConnection", () => {
 
     const query = `SELECT * FROM TEST WHERE "test" = ?`;
     const result = await conn["executeQuery"](query, ["val"]);
-    expect(result).toEqual([{ test: "5" }]);
+    expect(result.result).toEqual([{ test: "5" }]);
     expect(rawConnSpy).toHaveBeenCalledWith(query, ["val"]);
 
     conn.close();

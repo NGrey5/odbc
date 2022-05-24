@@ -5,7 +5,7 @@ import { customInsertParams } from "../../common/customInsertParams";
 import { transformODBCError } from "../../common/throwODBCError";
 import { trimEndOfResults } from "../../common/trimEndOfResults";
 import { DEFAULT_OPTIONS } from "../../constants";
-import { QueryParameter } from "../../types";
+import { ODBCResult, QueryParameter } from "../../types";
 import { CreateConnectionConfig } from "../../types/ConnectionConfig.interface";
 import { Options } from "../../types/Options.interface";
 import { ODBCErrorResult } from "../ODBCErrorResult/ODBCErrorResult";
@@ -67,8 +67,8 @@ export class ODBCConnection {
     sql: string,
     parameters?: QueryParameter[]
   ): Promise<T> {
-    const result: T[] = await this.executeQuery(sql, parameters);
-    return result[0];
+    const result = await this.executeQuery<T>(sql, parameters);
+    return result.result[0];
   }
 
   /**
@@ -81,7 +81,23 @@ export class ODBCConnection {
     sql: string,
     parameters?: QueryParameter[]
   ): Promise<T[]> {
-    const result: T[] = await this.executeQuery(sql, parameters);
+    const result = await this.executeQuery<T>(sql, parameters);
+    return result.result;
+  }
+
+  /**
+   * Returns the data from the query along with information pertaining to the executed query. Use this
+   * if you need information about your query execution. Data is stored in the `result` property
+   *
+   * @param sql string - the sql statement to execute
+   * @param parameters array - the parameters to inject into the sql statement at '?'
+   * @returns ODBCResult containing the data and information about the query
+   */
+  public async execute<T = any>(
+    sql: string,
+    parameters?: QueryParameter[]
+  ): Promise<ODBCResult<T>> {
+    const result = await this.executeQuery<T>(sql, parameters);
     return result;
   }
 
@@ -171,31 +187,44 @@ export class ODBCConnection {
 
   // Private Methods
 
-  private async executeQuery(
+  private async executeQuery<T>(
     sql: string,
     parameters?: QueryParameter[]
-  ): Promise<any> {
-    if (!this.connection)
+  ): Promise<ODBCResult<T>> {
+    // If no connection, throw an error
+    if (!this.connection) {
       throw new Error(`There was no active ODBC connection found.`);
+    }
+
+    // Init the query
     let query: string = sql;
+
     try {
-      let result: odbc.Result<any>; // Init the result
+      let odbcResult: odbc.Result<any>; // Init the result
       // If using custom insert param function, then create the query and get result
       if (this.options.useCustomInsertParams) {
         query = customInsertParams(sql, parameters);
-        result = await this.connection.query(query);
+        odbcResult = await this.connection.query(query);
       }
       // If using normal insert param function, then get the result
       else {
-        result = await this.connection.query(query, parameters as any[]);
+        odbcResult = await this.connection.query(query, parameters as any[]);
       }
 
-      let transformedResult: any = result; // Init the transformed result
+      let transformedResult: T[] = odbcResult; // Init the transformed result
       // If trimming white spaces, then transform
       if (this.options.trimEndOfResults) {
-        transformedResult = trimEndOfResults(transformedResult);
+        transformedResult = trimEndOfResults<T>(transformedResult);
       }
-      return transformedResult;
+
+      return {
+        result: transformedResult,
+        columns: odbcResult.columns,
+        count: odbcResult.count,
+        parameters: odbcResult.parameters,
+        return: odbcResult.return,
+        statement: odbcResult.statement,
+      };
     } catch (caughtError: any) {
       let message: string =
         caughtError.message ||
