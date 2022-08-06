@@ -10,7 +10,122 @@ import { CreateConnectionConfig } from "../../types/ConnectionConfig.interface";
 import { Options } from "../../types/Options.interface";
 import { ODBCErrorResult } from "../ODBCErrorResult/ODBCErrorResult";
 
+export class ODBCConfig {
+  private _connectionString: string = "";
+
+  constructor() {}
+
+  public useConnectionString(connectionString: string): this {
+    this._connectionString = connectionString;
+    return this;
+  }
+
+  public useDSN(dsn: string): this {
+    this._connectionString = `DSN=${dsn}`;
+    return this;
+  }
+
+  public getConnectionString(): string {
+    return this._connectionString;
+  }
+}
+
+type ConnectionConfigObject = {
+  driver: string;
+  server: string;
+  database: string;
+  auth?: {
+    user: string;
+    password: string;
+  };
+};
+
+export class GenericODBCConfig extends ODBCConfig {
+  private _driverKey: string = "Driver";
+  private _serverKey: string = "Server";
+  private _databaseKey: string = "Database";
+  private _userKey: string = "User";
+  private _passwordKey: string = "Password";
+
+  constructor() {
+    super();
+  }
+
+  public setConnectionStringKeys(keys: {
+    driver: string;
+    server: string;
+    database: string;
+    user: string;
+    password: string;
+  }): this {
+    this._driverKey = keys.driver;
+    this._serverKey = keys.server;
+    this._databaseKey = keys.database;
+    this._userKey = keys.user;
+    this._passwordKey = keys.password;
+    return this;
+  }
+
+  public useConfig(config: ConnectionConfigObject): this {
+    const { driver, server, database, auth } = config;
+    const parts: string[] = [];
+    parts.push(`${this._driverKey}={${driver}}`);
+    parts.push(`${this._serverKey}=${server}`);
+    parts.push(`${this._databaseKey}=${database}`);
+    if (auth) {
+      parts.push(
+        `${this._userKey}=${auth.user}`,
+        `${this._passwordKey}=${auth.password}`
+      );
+    }
+    this.useConnectionString(parts.join(";"));
+    return this;
+  }
+}
+
+export class ActianZenConfig extends GenericODBCConfig {
+  constructor(config: ConnectionConfigObject) {
+    super();
+    this.setConnectionStringKeys({
+      driver: "DriverName",
+      server: "ServerName",
+      database: "DBQ",
+      user: "UID",
+      password: "PWD",
+    });
+    this.useConfig(config);
+  }
+}
+
 export class ODBCConnection {
+  private _connection: odbc.Connection | undefined;
+
+  constructor() {}
+
+  /** Shorthand method for creating a new ODBCConnection class and using the `init` method */
+  public static async create(
+    config: string | ODBCConfig
+  ): Promise<ODBCConnection> {
+    return new ODBCConnection().init(config);
+  }
+
+  /** Opens a new ODBC connection with the provided config */
+  public async init(config: string | ODBCConfig): Promise<this> {
+    let connectionString =
+      typeof config === "string" ? config : config.getConnectionString();
+    this._connection = await odbc.connect(connectionString);
+    return this;
+  }
+
+  /** Wraps and existing odbc connection from the standard `odbc` package in it's ODBCConnection class representation */
+  public wrapConnection(connection: odbc.Connection): this {
+    if (this._connection) this._connection.close(); // Close any existing connection
+    this._connection = connection;
+    return this;
+  }
+}
+
+export class ODBCConnection2 {
   private connection: odbc.Connection | undefined;
   private options: Options = DEFAULT_OPTIONS;
 
