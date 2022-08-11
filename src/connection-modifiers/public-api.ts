@@ -1,0 +1,1 @@
+export { trimODBCResultsPipe } from "./trimODBCResultsPipe";
