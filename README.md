@@ -438,6 +438,9 @@ If a modifier is applied to an `ODBCConnection` it will be applied to all action
 
 Takes a config object of type `ODBCConnectionModifierOptions` to supply transformations on the data received and returned from the connection
 
+Note: any query pipes applied will not affect an `ODBCStatement` as it will always use the database's native functionality to bind parameters
+and cannot be overridden.
+
 ```ts
 const options: ODBCConnectionModifierOptions = {
   resultPipes: [
